@@ -8,6 +8,7 @@
 # * ADVERTISED_HOST: the external ip for the container, e.g. `docker-machine ip \`docker-machine active\``
 # * ADVERTISED_PORT: the external port for Kafka, e.g. 9092
 # * ZK_CHROOT: the zookeeper chroot that's used by Kafka (without / prefix), e.g. "kafka"
+# * TOPICS: List of topics to create after bootstrap e.g. "kafka:1:1" <name>:<partitions>:<replication_factor>
 
 # Configure advertised host/port if we run in helios
 if [ ! -z "$HELIOS_PORT_kafka" ]; then
@@ -67,4 +68,18 @@ if [ -e /tmp/kafka-custom.sh ]; then
 fi
 
 # Run Kafka
-$KAFKA_HOME/bin/kafka-server-start.sh $KAFKA_HOME/config/server.properties
+$KAFKA_HOME/bin/kafka-server-start.sh $KAFKA_HOME/config/server.properties &
+KAFKA_SERVER_PID=$!
+
+while netstat -lnt | awk '$4 ~ /:9092$/ {exit 1}'; do echo "waiting"; sleep 1; done
+
+# Create topics as configured
+if [[ -n $TOPICS ]]; then
+    IFS=','; for topicToCreate in $TOPICS; do
+        echo $topicToCreate
+        IFS=':' read -a topicConfig <<< "$topicToCreate"
+        $KAFKA_HOME/bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor ${topicConfig[2]} --partition ${topicConfig[1]} --topic "${topicConfig[0]}"
+    done
+fi
+
+wait $KAFKA_SERVER_PID
