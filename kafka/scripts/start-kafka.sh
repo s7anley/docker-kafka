@@ -3,7 +3,7 @@
 # Optional ENV variables:
 #
 # Any variable prefixed with KAFKA will be transformed to name of parameter for example
-# KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false' will set auto.create.topic to false
+# KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false' will set auto.create.topics.enable to false
 #
 # * ADVERTISED_HOST: the external ip for the container, e.g. `docker-machine ip \`docker-machine active\``
 # * ADVERTISED_PORT: the external port for Kafka, e.g. 9092
@@ -49,7 +49,7 @@ fi
 
 for VAR in `env`
 do
-  if [[ $VAR =~ ^KAFKA_ && ! $VAR =~ ^KAFKA_HOME ]]; then
+  if [[ $VAR =~ ^KAFKA_ && ! $VAR =~ ^KAFKA_HOME && ! $VAR =~ ^KAFKA_VERSION ]]; then
     kafka_name=`echo "$VAR" | sed -r "s/KAFKA_(.*)=.*/\1/g" | tr '[:upper:]' '[:lower:]' | tr _ .`
     env_var=`echo "$VAR" | sed -r "s/(.*)=.*/\1/g"`
     if egrep -q "(^|^#)$kafka_name=" $KAFKA_HOME/config/server.properties; then
